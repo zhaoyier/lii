@@ -1,4 +1,4 @@
-package tao
+package server
 
 import (
 	"bytes"
@@ -29,6 +29,18 @@ func (f HandlerFunc) Handle(ctx context.Context, c WriteCloser) {
 	f(ctx, c)
 }
 
+type HandlerFunc2 func(msg *Message, s *ServerConn)
+
+func ProcessMessage(msg *Message, s *ServerConn) {
+	//time.Sleep(5 * time.Second)
+	fmt.Println("[ProcessMessage] 处理请求收:")
+	temp := Message{
+		ReqType: msg.ReqType + 1,
+		Body:    []byte("Hi," + string(msg.Body)),
+	}
+	s.Write(temp)
+}
+
 // UnmarshalFunc unmarshals bytes into Message.
 type UnmarshalFunc func([]byte) (Message, error)
 
@@ -42,11 +54,11 @@ var (
 	buf *bytes.Buffer
 	// messageRegistry is the registry of all
 	// message-related unmarshal and handle functions.
-	messageRegistry map[int32]handlerUnmarshaler
+	//messageRegistry map[int32]handlerUnmarshaler
 )
 
 func init() {
-	messageRegistry = map[int32]handlerUnmarshaler{}
+	//messageRegistry = map[int32]handlerUnmarshaler{}
 	buf = new(bytes.Buffer)
 }
 
@@ -55,39 +67,54 @@ func init() {
 // If no handler function provided, the message will not be handled unless you
 // set a default one by calling SetOnMessageCallback.
 // If Register being called twice on one msgType, it will panics.
-func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler func(context.Context, WriteCloser)) {
-	if _, ok := messageRegistry[msgType]; ok {
-		panic(fmt.Sprintf("trying to register message %d twice", msgType))
-	}
-
-	messageRegistry[msgType] = handlerUnmarshaler{
-		unmarshaler: unmarshaler,
-		handler:     HandlerFunc(handler),
-	}
-}
+//func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler func(context.Context, WriteCloser)) {
+//	if _, ok := messageRegistry[msgType]; ok {
+//		panic(fmt.Sprintf("trying to register message %d twice", msgType))
+//	}
+//
+//	messageRegistry[msgType] = handlerUnmarshaler{
+//		unmarshaler: unmarshaler,
+//		handler:     HandlerFunc(handler),
+//	}
+//}
 
 // GetUnmarshalFunc returns the corresponding unmarshal function for msgType.
-func GetUnmarshalFunc(msgType int32) UnmarshalFunc {
-	entry, ok := messageRegistry[msgType]
-	if !ok {
-		return nil
-	}
-	return entry.unmarshaler
-}
+//func GetUnmarshalFunc(msgType int32) UnmarshalFunc {
+//	entry, ok := messageRegistry[msgType]
+//	if !ok {
+//		return nil
+//	}
+//	return entry.unmarshaler
+//}
 
 // GetHandlerFunc returns the corresponding handler function for msgType.
-func GetHandlerFunc(msgType int32) HandlerFunc {
-	entry, ok := messageRegistry[msgType]
-	if !ok {
-		return nil
-	}
-	return entry.handler
-}
+//func GetHandlerFunc(msgType int32) HandlerFunc {
+//	entry, ok := messageRegistry[msgType]
+//	if !ok {
+//		return nil
+//	}
+//	return entry.handler
+//}
 
 // Message represents the structured data that can be handled.
-type Message interface {
-	MessageNumber() int32
-	Serialize() ([]byte, error)
+//type Message interface {
+//	MessageNumber() int32
+//	Serialize() ([]byte, error)
+//}
+
+type Message struct {
+	ReqType int32
+	BodyLen int32
+	Body    []byte
+}
+
+func (m *Message) Serialize() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, m.ReqType)
+	binary.Write(buf, binary.LittleEndian, int32(len(m.Body)))
+	buf.Write(m.Body)
+	//buf.WriteString("Hi, " + string(m.Body))
+	return buf.Bytes(), nil
 }
 
 // HeartBeatMessage for application-level keeping alive.
@@ -111,36 +138,36 @@ func (hbm HeartBeatMessage) MessageNumber() int32 {
 }
 
 // DeserializeHeartBeat deserializes bytes into Message.
-func DeserializeHeartBeat(data []byte) (message Message, err error) {
-	var timestamp int64
-	if data == nil {
-		return nil, ErrNilData
-	}
-	buf := bytes.NewReader(data)
-	err = binary.Read(buf, binary.LittleEndian, &timestamp)
-	if err != nil {
-		return nil, err
-	}
-	return HeartBeatMessage{
-		Timestamp: timestamp,
-	}, nil
-}
+//func DeserializeHeartBeat(data []byte) (message Message, err error) {
+//	var timestamp int64
+//	if data == nil {
+//		return nil, ErrNilData
+//	}
+//	buf := bytes.NewReader(data)
+//	err = binary.Read(buf, binary.LittleEndian, &timestamp)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return HeartBeatMessage{
+//		Timestamp: timestamp,
+//	}, nil
+//}
 
 // HandleHeartBeat updates connection heart beat timestamp.
-func HandleHeartBeat(ctx context.Context, c WriteCloser) {
-	msg := MessageFromContext(ctx)
-	switch c := c.(type) {
-	case *ServerConn:
-		c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
-	case *ClientConn:
-		c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
-	}
-}
+//func HandleHeartBeat(ctx context.Context, c WriteCloser) {
+//	msg := MessageFromContext(ctx)
+//	switch c := c.(type) {
+//	case *ServerConn:
+//		c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
+//	case *ClientConn:
+//		c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
+//	}
+//}
 
 // Codec is the interface for message coder and decoder.
 // Application programmer can define a custom codec themselves.
 type Codec interface {
-	Decode(net.Conn) (Message, error)
+	Decode(net.Conn) (*Message, error)
 	Encode(Message) ([]byte, error)
 }
 
@@ -149,7 +176,7 @@ type Codec interface {
 type TypeLengthValueCodec struct{}
 
 // Decode decodes the bytes data into Message
-func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
+func (codec TypeLengthValueCodec) Decode(raw net.Conn) (*Message, error) {
 	fmt.Println("[Decode] 准备解析数据：")
 	byteChan := make(chan []byte)
 	errorChan := make(chan error)
@@ -180,18 +207,17 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
 			return nil, ErrBadData
 		}
 		typeBuf := bytes.NewReader(typeBytes)
-		var msgType int32
+		var msgType, msgLen int32
 		if err := binary.Read(typeBuf, binary.LittleEndian, &msgType); err != nil {
 			return nil, err
 		}
-		fmt.Println("[Decode] 请求网络消息类型是：", msgType)
+		fmt.Println("[Decode] 返回网络消息类型是:", msgType)
 		lengthBytes := make([]byte, MessageLenBytes)
 		_, err := io.ReadFull(raw, lengthBytes)
 		if err != nil {
 			return nil, err
 		}
 		lengthBuf := bytes.NewReader(lengthBytes)
-		var msgLen uint32
 		if err = binary.Read(lengthBuf, binary.LittleEndian, &msgLen); err != nil {
 			return nil, err
 		}
@@ -207,12 +233,22 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
 			return nil, err
 		}
 
-		// deserialize message from bytes
-		unmarshaler := GetUnmarshalFunc(msgType)
-		if unmarshaler == nil {
-			return nil, ErrUndefined(msgType)
+		msg := &Message{
+			ReqType: msgType,
+			BodyLen: msgLen,
+			Body:    msgBytes,
 		}
-		return unmarshaler(msgBytes)
+
+		fmt.Printf("[Decode] 请求数据是:%+v|%s\n", msg, string(msg.Body))
+
+		return msg, nil
+
+		// deserialize message from bytes
+		//unmarshaler := GetUnmarshalFunc(msgType)
+		//if unmarshaler == nil {
+		//	return nil, ErrUndefined(msgType)
+		//}
+		//return unmarshaler(msgBytes)
 	}
 }
 
@@ -222,14 +258,7 @@ func (codec TypeLengthValueCodec) Encode(msg Message) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	buf := new(bytes.Buffer)
-	//binary.Write(buf, binary.LittleEndian, msg.MessageNumber())
-	binary.Write(buf, binary.LittleEndian, int32(0x1101))
-	binary.Write(buf, binary.LittleEndian, int32(len(data)))
-	buf.Write(data)
-	fmt.Println("[Encode] buffer is:", buf.String(), len(buf.String()))
-	packet := buf.Bytes()
-	return packet, nil
+	return data, err
 }
 
 // ContextKey is the key type for putting context-related data.

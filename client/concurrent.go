@@ -1,15 +1,7 @@
-/* Data types and structues for concurrent use:
-AtomicInt32
-AtomicInt64
-AtomicBoolean
-ConcurrentMap
-*/
-
-package tao
+package client
 
 import (
 	"fmt"
-	"sync"
 	"sync/atomic"
 )
 
@@ -297,68 +289,68 @@ func (a *AtomicBoolean) String() string {
 	return fmt.Sprintf("%t", a.Get())
 }
 
-// ConnMap is a safe map for server connection management.
-type ConnMap struct {
-	sync.RWMutex
-	m map[int64]*ServerConn
-}
+// // ConnMap is a safe map for server connection management.
+// type ConnMap struct {
+// 	sync.RWMutex
+// 	m map[int64]*ServerConn
+// }
 
-// NewConnMap returns a new ConnMap.
-func NewConnMap() *ConnMap {
-	return &ConnMap{
-		m: make(map[int64]*ServerConn),
-	}
-}
+// // NewConnMap returns a new ConnMap.
+// func NewConnMap() *ConnMap {
+// 	return &ConnMap{
+// 		m: make(map[int64]*ServerConn),
+// 	}
+// }
 
-// Clear clears all elements in map.
-func (cm *ConnMap) Clear() {
-	cm.Lock()
-	cm.m = make(map[int64]*ServerConn)
-	cm.Unlock()
-}
+// // Clear clears all elements in map.
+// func (cm *ConnMap) Clear() {
+// 	cm.Lock()
+// 	cm.m = make(map[int64]*ServerConn)
+// 	cm.Unlock()
+// }
 
-// Get gets a server connection with specified net ID.
-func (cm *ConnMap) Get(id int64) (*ServerConn, bool) {
-	cm.RLock()
-	sc, ok := cm.m[id]
-	cm.RUnlock()
-	return sc, ok
-}
+// // Get gets a server connection with specified net ID.
+// func (cm *ConnMap) Get(id int64) (*ServerConn, bool) {
+// 	cm.RLock()
+// 	sc, ok := cm.m[id]
+// 	cm.RUnlock()
+// 	return sc, ok
+// }
 
-// Put puts a server connection with specified net ID in map.
-func (cm *ConnMap) Put(id int64, sc *ServerConn) {
-	cm.Lock()
-	cm.m[id] = sc
-	cm.Unlock()
-}
+// // Put puts a server connection with specified net ID in map.
+// func (cm *ConnMap) Put(id int64, sc *ServerConn) {
+// 	cm.Lock()
+// 	cm.m[id] = sc
+// 	cm.Unlock()
+// }
 
-// Remove removes a server connection with specified net ID.
-func (cm *ConnMap) Remove(id int64) {
-	cm.Lock()
-	delete(cm.m, id)
-	cm.Unlock()
-}
+// // Remove removes a server connection with specified net ID.
+// func (cm *ConnMap) Remove(id int64) {
+// 	cm.Lock()
+// 	delete(cm.m, id)
+// 	cm.Unlock()
+// }
 
-// Size returns map size.
-func (cm *ConnMap) Size() int {
-	cm.RLock()
-	size := len(cm.m)
-	cm.RUnlock()
-	return size
-}
+// // Size returns map size.
+// func (cm *ConnMap) Size() int {
+// 	cm.RLock()
+// 	size := len(cm.m)
+// 	cm.RUnlock()
+// 	return size
+// }
 
-// IsEmpty tells whether ConnMap is empty.
-func (cm *ConnMap) IsEmpty() bool {
-	return cm.Size() <= 0
-}
+// // IsEmpty tells whether ConnMap is empty.
+// func (cm *ConnMap) IsEmpty() bool {
+// 	return cm.Size() <= 0
+// }
 
-// IDs returns all net IDs of ConnMap.
-func (cm *ConnMap) IDs() []int64 {
-	var ids []int64
-	cm.RLock()
-	for id := range cm.m {
-		ids = append(ids, id)
-	}
-	cm.RUnlock()
-	return ids
-}
+// // IDs returns all net IDs of ConnMap.
+// func (cm *ConnMap) IDs() []int64 {
+// 	var ids []int64
+// 	cm.RLock()
+// 	for id := range cm.m {
+// 		ids = append(ids, id)
+// 	}
+// 	cm.RUnlock()
+// 	return ids
+// }

@@ -9,39 +9,40 @@ import (
 
 	"github.com/leesper/holmes"
 	//"github.com/leesper/tao"
-	"open.com/tao"
+	//"open.com/tao"
 	//"github.com/leesper/tao/examples/chat"
-	"open.com/tao/examples/chat"
+	//"open.com/tao/examples/chat"
+	"zhao.com/lii/server"
 )
 
 // ChatServer is the chatting server.
 type ChatServer struct {
-	*tao.Server
+	*server.Server
 }
 
 // NewChatServer returns a ChatServer.
 func NewChatServer() *ChatServer {
-	onConnectOption := tao.OnConnectOption(func(conn tao.WriteCloser) bool {
+	onConnectOption := server.OnConnectOption(func(conn server.WriteCloser) bool {
 		holmes.Infoln("on connect")
 		return true
 	})
-	onErrorOption := tao.OnErrorOption(func(conn tao.WriteCloser) {
+	onErrorOption := server.OnErrorOption(func(conn server.WriteCloser) {
 		holmes.Infoln("on error")
 	})
-	onCloseOption := tao.OnCloseOption(func(conn tao.WriteCloser) {
+	onCloseOption := server.OnCloseOption(func(conn server.WriteCloser) {
 		holmes.Infoln("close chat client")
 	})
 	return &ChatServer{
-		tao.NewServer(onConnectOption, onErrorOption, onCloseOption),
+		server.NewServer(onConnectOption, onErrorOption, onCloseOption),
 	}
 }
 
 func main() {
 	defer holmes.Start().Stop()
 
-	tao.Register(chat.ChatMessage, chat.DeserializeMessage, chat.ProcessMessage)
+	//tao.Register(chat.ChatMessage, chat.DeserializeMessage, chat.ProcessMessage)
 
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", "0.0.0.0", 12345))
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", "0.0.0.0", 12000))
 	if err != nil {
 		holmes.Fatalln("listen error", err)
 	}

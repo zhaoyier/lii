@@ -55,4 +55,4 @@ TimingWheel is a safe timer for running timed callbacks on connection.
 WorkerPool is a go-routine pool for running message handlers, you can fetch one
 by calling func WorkerPoolInstance() *WorkerPool.
 */
-package tao
+package server

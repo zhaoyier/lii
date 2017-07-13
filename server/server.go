@@ -1,4 +1,4 @@
-package tao
+package server
 
 import (
 	"context"
@@ -111,6 +111,7 @@ func OnErrorOption(cb func(WriteCloser)) ServerOption {
 
 // Server  is a server to serve TCP requests.
 type Server struct {
+	addr  string
 	opts   options
 	ctx    context.Context
 	cancel context.CancelFunc

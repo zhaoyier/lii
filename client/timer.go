@@ -1,4 +1,4 @@
-package tao
+package client
 
 import (
 	"container/heap"
@@ -18,6 +18,20 @@ var timerIds *AtomicInt64
 
 func init() {
 	timerIds = NewAtomicInt64(0)
+}
+
+// OnTimeOut represents a timed task.
+type OnTimeOut struct {
+	Callback func(time.Time, *ClientConn)
+	Ctx      context.Context
+}
+
+// NewOnTimeOut returns OnTimeOut.
+func NewOnTimeOut(ctx context.Context, cb func(time.Time, *ClientConn)) *OnTimeOut {
+	return &OnTimeOut{
+		Callback: cb,
+		Ctx:      ctx,
+	}
 }
 
 // timerHeap is a heap-based priority queue

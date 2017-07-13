@@ -1,0 +1,18 @@
+{
+    "development": {
+        "chat": [
+            {"id":"chat-server-1","host":"0:0:0:0","port":11100}
+        ],
+        "logic": [
+            {"id":"logic-server-1","host":"0:0:0:0","port":11200}
+        ]
+    },
+    "production": {
+        "chat": [
+            {"id":"chat-server-1","host":"0:0:0:0","port":11100}
+        ],
+        "logic": [
+            {"id":"logic-server-1","host":"0:0:0:0","port":11200}
+        ]
+    }
+}

@@ -13,12 +13,12 @@ import (
 	"open.com/tao/examples/chat"
 )
 
-func main() {
+func main1() {
 	defer holmes.Start().Stop()
 
 	tao.Register(chat.ChatMessage, chat.DeserializeMessage, nil)
 
-	c, err := net.Dial("tcp", "127.0.0.1:12345")
+	c, err := net.Dial("tcp", "127.0.0.1:12000")
 	if err != nil {
 		holmes.Fatalln(err)
 	}
